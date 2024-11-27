@@ -1,0 +1,131 @@
+CREATE DATABASE Healthcare;
+USE Healthcare;
+-- DROP DATABASE Healthcare;
+CREATE TABLE Dim_Patient (
+    Patient_ID INT PRIMARY KEY,
+    First_Name VARCHAR(50),
+    Last_Name VARCHAR(50),
+    Gender CHAR(1),
+    Date_Of_Birth DATE,
+    Contact_Info VARCHAR(100)
+);
+
+CREATE TABLE Dim_Doctor (
+    Doctor_ID INT PRIMARY KEY,
+    First_Name VARCHAR(50),
+    Last_Name VARCHAR(50),
+    Specialization VARCHAR(50),
+    Department VARCHAR(50)
+);
+
+CREATE TABLE Dim_Service (
+    Service_ID INT PRIMARY KEY,
+    Service_Name VARCHAR(100),
+    Service_Type VARCHAR(50),
+    Service_Cost DECIMAL(10, 2)
+);
+
+CREATE TABLE Dim_Time (
+    Time_ID INT PRIMARY KEY,
+    Date DATE,
+    Day_of_Week VARCHAR(10),
+    Month VARCHAR(10),
+    Quarter INT,
+    Year INT
+);
+
+CREATE TABLE Dim_Facility (
+    Facility_ID INT PRIMARY KEY,
+    Location_Name VARCHAR(100),
+    Department VARCHAR(50),
+    Room_Number VARCHAR(10),
+    Bed_Number VARCHAR(10)
+);
+CREATE TABLE Fact_Patient_Care (
+    Care_ID INT PRIMARY KEY,
+    Patient_ID INT,
+    Doctor_ID INT,
+    Service_ID INT,
+    Facility_ID INT,
+    Time_ID INT,
+    Service_Cost DECIMAL(10, 2),
+    Billing_Amount DECIMAL(10, 2),
+    Duration_Of_Stay INT,
+    
+    FOREIGN KEY (Patient_ID) REFERENCES Dim_Patient(Patient_ID),
+    FOREIGN KEY (Doctor_ID) REFERENCES Dim_Doctor(Doctor_ID),
+    FOREIGN KEY (Service_ID) REFERENCES Dim_Service(Service_ID),
+    FOREIGN KEY (Facility_ID) REFERENCES Dim_Facility(Facility_ID),
+    FOREIGN KEY (Time_ID) REFERENCES Dim_Time(Time_ID)
+);
+-- Inserting into Dim_Patient
+INSERT INTO Dim_Patient (Patient_ID, First_Name, Last_Name, Gender, Date_Of_Birth, Contact_Info) VALUES
+(1, 'John', 'Doe', 'M', '1980-05-15', 'john.doe@example.com'),
+(2, 'Jane', 'Smith', 'F', '1992-11-20', 'jane.smith@example.com'),
+(3, 'Emily', 'Jones', 'F', '1975-03-10', 'emily.jones@example.com'),
+(4, 'Michael', 'Brown', 'M', '1987-01-25', 'michael.brown@example.com'),
+(5, 'Sophia', 'White', 'F', '1990-09-30', 'sophia.white@example.com');
+
+-- Inserting into Dim_Doctor
+INSERT INTO Dim_Doctor (Doctor_ID, First_Name, Last_Name, Specialization, Department) VALUES
+(1, 'Dr. Alice', 'Johnson', 'Cardiologist', 'Cardiology'),
+(2, 'Dr. Robert', 'Williams', 'Dermatologist', 'Dermatology'),
+(3, 'Dr. Laura', 'Garcia', 'Neurologist', 'Neurology'),
+(4, 'Dr. David', 'Martinez', 'Surgeon', 'Surgery'),
+(5, 'Dr. Daniel', 'Rodriguez', 'Pediatrician', 'Pediatrics');
+
+-- Inserting into Dim_Service
+INSERT INTO Dim_Service (Service_ID, Service_Name, Service_Type, Service_Cost) VALUES
+(1, 'Consultation', 'Outpatient', 100.00),
+(2, 'Surgery', 'Inpatient', 5000.00),
+(3, 'MRI Scan', 'Diagnostics', 800.00),
+(4, 'Blood Test', 'Diagnostics', 50.00),
+(5, 'Vaccination', 'Preventive', 150.00);
+
+-- Inserting into Dim_Time
+INSERT INTO Dim_Time (Time_ID, Date, Day_of_Week, Month, Quarter, Year) VALUES
+(1, '2024-09-10', 'Tuesday', 'September', 3, 2024),
+(2, '2024-09-11', 'Wednesday', 'September', 3, 2024),
+(3, '2024-09-12', 'Thursday', 'September', 3, 2024),
+(4, '2024-09-13', 'Friday', 'September', 3, 2024),
+(5, '2024-09-14', 'Saturday', 'September', 3, 2024);
+
+-- Inserting into Dim_Facility
+INSERT INTO Dim_Facility (Facility_ID, Location_Name, Department, Room_Number, Bed_Number) VALUES
+(1, 'Main Hospital', 'Cardiology', '101', 'B1'),
+(2, 'Main Hospital', 'Dermatology', '102', 'B2'),
+(3, 'Main Hospital', 'Neurology', '103', 'B3'),
+(4, 'Main Hospital', 'Surgery', '201', 'B4'),
+(5, 'Main Hospital', 'Pediatrics', '202', 'B5');
+
+INSERT INTO Fact_Patient_Care (Care_ID, Patient_ID, Doctor_ID, Service_ID, Facility_ID, Time_ID, Service_Cost, Billing_Amount, Duration_Of_Stay) VALUES
+(1, 1, 1, 1, 1, 1, 100.00, 120.00, 0),  -- John Doe received a consultation from Dr. Alice Johnson
+(2, 2, 2, 2, 4, 2, 5000.00, 5200.00, 3),  -- Jane Smith had surgery performed by Dr. Robert Williams
+(3, 3, 3, 3, 3, 3, 800.00, 820.00, 0),   -- Emily Jones had an MRI scan by Dr. Laura Garcia
+(4, 4, 4, 2, 4, 4, 5000.00, 5100.00, 2), -- Michael Brown had surgery performed by Dr. David Martinez
+(5, 5, 5, 5, 5, 5, 150.00, 170.00, 0);   -- Sophia White received a vaccination from Dr. Daniel Rodriguez
+
+
+-- Example Query: Retrieve Patient Care Details
+-- This query will fetch the patient’s full name, doctor’s name, service provided, cost, billing amount, and the facility department 
+-- where the care was provided.
+SELECT 
+    p.First_Name AS Patient_First_Name, 
+    p.Last_Name AS Patient_Last_Name,
+    d.First_Name AS Doctor_First_Name, 
+    d.Last_Name AS Doctor_Last_Name,
+    s.Service_Name, 
+    f.Department, 
+    pc.Service_Cost, 
+    pc.Billing_Amount
+FROM 
+    Fact_Patient_Care pc
+JOIN 
+    Dim_Patient p ON pc.Patient_ID = p.Patient_ID
+JOIN 
+    Dim_Doctor d ON pc.Doctor_ID = d.Doctor_ID
+JOIN 
+    Dim_Service s ON pc.Service_ID = s.Service_ID
+JOIN 
+    Dim_Facility f ON pc.Facility_ID = f.Facility_ID;
+

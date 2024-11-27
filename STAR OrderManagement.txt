@@ -1,0 +1,165 @@
+CREATE DATABASE OrderManagementDW;
+USE OrderManagementDW;
+DROP DATABASE OrderManagementDW;
+
+CREATE TABLE DimDate (
+    DateID INT PRIMARY KEY AUTO_INCREMENT,
+    Date DATE NOT NULL,
+    Day INT NOT NULL,
+    Month VARCHAR(20) NOT NULL,
+    Quarter VARCHAR(5) NOT NULL,
+    Year INT NOT NULL
+);
+
+CREATE TABLE DimCustomer (
+    CustomerID INT PRIMARY KEY AUTO_INCREMENT,
+    CustomerName VARCHAR(255) NOT NULL,
+    ShippingAddress VARCHAR(255),
+    BillingAddress VARCHAR(255)
+);
+
+CREATE TABLE DimProduct (
+    ProductID INT PRIMARY KEY AUTO_INCREMENT,
+    ProductName VARCHAR(255) NOT NULL,
+    Category VARCHAR(100),
+    UnitPrice DECIMAL(10, 2) NOT NULL
+);
+
+CREATE TABLE DimPromotion (
+    PromotionID INT PRIMARY KEY AUTO_INCREMENT,
+    PromotionName VARCHAR(255),
+    DiscountPercentage DECIMAL(5, 2)
+);
+
+CREATE TABLE DimSalesRep (
+    SalesRepID INT PRIMARY KEY AUTO_INCREMENT,
+    SalesRepName VARCHAR(255),
+    Region VARCHAR(100)
+);
+
+CREATE TABLE DimCurrency (
+    CurrencyID INT PRIMARY KEY AUTO_INCREMENT,
+    CurrencyName VARCHAR(50) NOT NULL,
+    ExchangeRateToUSD DECIMAL(10, 4) NOT NULL
+);
+
+
+CREATE TABLE FactOrders (
+    OrderID INT PRIMARY KEY AUTO_INCREMENT,
+    DateID INT NOT NULL,
+    CustomerID INT NOT NULL,
+    ProductID INT NOT NULL,
+    PromotionID INT NOT NULL,
+    SalesRepID INT NOT NULL,
+    CurrencyID INT NOT NULL,
+    Quantity INT NOT NULL,
+    GrossAmount DECIMAL(15, 2) NOT NULL,
+    NetAmount DECIMAL(15, 2) NOT NULL,
+    RequestedShipDateID INT NOT NULL,
+    FOREIGN KEY (DateID) REFERENCES DimDate(DateID),
+    FOREIGN KEY (CustomerID) REFERENCES DimCustomer(CustomerID),
+    FOREIGN KEY (ProductID) REFERENCES DimProduct(ProductID),
+    FOREIGN KEY (PromotionID) REFERENCES DimPromotion(PromotionID),
+    FOREIGN KEY (SalesRepID) REFERENCES DimSalesRep(SalesRepID),
+    FOREIGN KEY (CurrencyID) REFERENCES DimCurrency(CurrencyID),
+    FOREIGN KEY (RequestedShipDateID) REFERENCES DimDate(DateID)
+);
+
+INSERT INTO DimDate (Date, Day, Month, Quarter, Year)
+VALUES
+('2024-01-01', 1, 'January', 'Q1', 2024),
+('2024-01-15', 15, 'January', 'Q1', 2024),
+('2024-02-01', 1, 'February', 'Q1', 2024);
+
+INSERT INTO DimCustomer (CustomerName, ShippingAddress, BillingAddress)
+VALUES
+('Acme Corp', '123 Elm St, Dubai', '456 Oak St, Dubai'),
+('Globex Inc', '789 Pine St, Dubai', '321 Maple St, Dubai');
+
+INSERT INTO DimProduct (ProductName, Category, UnitPrice)
+VALUES
+('Laptop Model A', 'Electronics', 1200.00),
+('Smartphone Model X', 'Electronics', 800.00);
+
+INSERT INTO DimPromotion (PromotionName, DiscountPercentage)
+VALUES
+('New Year Sale', 10.0),
+('Summer Discount', 15.0);
+
+INSERT INTO DimSalesRep (SalesRepName, Region)
+VALUES
+('John Doe', 'North'),
+('Jane Smith', 'South');
+
+INSERT INTO DimCurrency (CurrencyName, ExchangeRateToUSD)
+VALUES
+('USD', 1.0),
+('Dirham', 0.272),
+('Euro', 1.1);
+
+
+INSERT INTO FactOrders (DateID, CustomerID, ProductID, PromotionID, SalesRepID, CurrencyID, Quantity, GrossAmount, NetAmount, RequestedShipDateID)
+VALUES
+(1, 1, 1, 1, 1, 1, 10, 12000.00, 10800.00, 2),
+(2, 2, 2, 2, 2, 2, 5, 4000.00, 3400.00, 3);
+
+
+-- Net Order Dollar Amount Per Customer
+SELECT 
+    c.CustomerName,
+    SUM(f.NetAmount * cu.ExchangeRateToUSD) AS NetOrderAmountUSD
+FROM 
+    FactOrders f
+    JOIN DimCustomer c ON f.CustomerID = c.CustomerID
+    JOIN DimCurrency cu ON f.CurrencyID = cu.CurrencyID
+GROUP BY 
+    c.CustomerName;
+
+
+-- Net Order Dollar Amount Per Product
+SELECT 
+    p.ProductName,
+    SUM(f.NetAmount * cu.ExchangeRateToUSD) AS NetOrderAmountUSD
+FROM 
+    FactOrders f
+    JOIN DimProduct p ON f.ProductID = p.ProductID
+    JOIN DimCurrency cu ON f.CurrencyID = cu.CurrencyID
+GROUP BY 
+    p.ProductName;
+
+
+-- Net Order Dollar Amount Per Promotion
+SELECT 
+    pr.PromotionName,
+    SUM(f.NetAmount * cu.ExchangeRateToUSD) AS NetOrderAmountUSD
+FROM 
+    FactOrders f
+    JOIN DimPromotion pr ON f.PromotionID = pr.PromotionID
+    JOIN DimCurrency cu ON f.CurrencyID = cu.CurrencyID
+GROUP BY 
+    pr.PromotionName;
+
+
+-- Sales Representative Performance
+SELECT 
+    s.SalesRepName,
+    SUM(f.NetAmount * cu.ExchangeRateToUSD) AS TotalSalesUSD
+FROM 
+    FactOrders f
+    JOIN DimSalesRep s ON f.SalesRepID = s.SalesRepID
+    JOIN DimCurrency cu ON f.CurrencyID = cu.CurrencyID
+GROUP BY 
+    s.SalesRepName;
+
+
+-- Requested Ship Date Analysis
+SELECT 
+    d.Date AS RequestedShipDate,
+    COUNT(f.OrderID) AS TotalOrders,
+    SUM(f.NetAmount * cu.ExchangeRateToUSD) AS TotalNetAmountUSD
+FROM 
+    FactOrders f
+    JOIN DimDate d ON f.RequestedShipDateID = d.DateID
+    JOIN DimCurrency cu ON f.CurrencyID = cu.CurrencyID
+GROUP BY 
+    d.Date;

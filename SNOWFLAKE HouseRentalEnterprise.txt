@@ -1,0 +1,409 @@
+-- Create the database for House Rental Enterprise 
+
+CREATE DATABASE IF NOT EXISTS star; 
+
+-- DROP DATABASE HouseRentalEnterprise; 
+
+  
+
+-- Use the created database 
+
+USE star; 
+
+  
+
+-- Property Dimension and Sub-Dimensions 
+
+CREATE TABLE Sub_Dim_Property_Type ( 
+
+    Property_Type_ID INT PRIMARY KEY, 
+
+    Property_Type_Name VARCHAR(50) 
+
+); 
+
+  
+
+CREATE TABLE Sub_Dim_City ( 
+
+    City_ID INT PRIMARY KEY, 
+
+    City_Name VARCHAR(50), 
+
+    State VARCHAR(50), 
+
+    Country VARCHAR(50) 
+
+); 
+
+  
+
+CREATE TABLE Sub_Dim_Location ( 
+
+    Location_ID INT PRIMARY KEY, 
+
+    City_ID INT, 
+
+    Neighborhood VARCHAR(50), 
+
+    Latitude DECIMAL(9, 6), 
+
+    Longitude DECIMAL(9, 6), 
+
+    FOREIGN KEY (City_ID) REFERENCES Sub_Dim_City(City_ID) 
+
+); 
+
+  
+
+CREATE TABLE Dim_Property ( 
+
+    Property_ID INT PRIMARY KEY, 
+
+    Property_Type_ID INT, 
+
+    Location_ID INT, 
+
+    Size INT, 
+
+    Number_Of_Bedrooms INT, 
+
+    Number_Of_Bathrooms INT, 
+
+    Amenities VARCHAR(255), 
+
+    FOREIGN KEY (Property_Type_ID) REFERENCES Sub_Dim_Property_Type(Property_Type_ID), 
+
+    FOREIGN KEY (Location_ID) REFERENCES Sub_Dim_Location(Location_ID) 
+
+); 
+
+  
+
+-- Tenant Dimension and Sub-Dimensions 
+
+CREATE TABLE Sub_Dim_Rental_History ( 
+
+    Rental_History_ID INT PRIMARY KEY, 
+
+    Previous_Property_ID INT, 
+
+    Previous_Lease_Start_Date DATE, 
+
+    Previous_Lease_End_Date DATE, 
+
+    Previous_Rent_Amount DECIMAL(10, 2), 
+
+    FOREIGN KEY (Previous_Property_ID) REFERENCES Dim_Property(Property_ID) 
+
+); 
+
+  
+
+CREATE TABLE Dim_Tenant ( 
+
+    Tenant_ID INT PRIMARY KEY, 
+
+    First_Name VARCHAR(50), 
+
+    Last_Name VARCHAR(50), 
+
+    Email VARCHAR(100), 
+
+    Phone_Number VARCHAR(20), 
+
+    Rental_History_ID INT, 
+
+    FOREIGN KEY (Rental_History_ID) REFERENCES Sub_Dim_Rental_History(Rental_History_ID) 
+
+); 
+
+  
+
+-- Agent Dimension and Sub-Dimensions 
+
+CREATE TABLE Sub_Dim_Assigned_Properties ( 
+
+    Assigned_Properties_ID INT PRIMARY KEY, 
+
+    Property_ID INT, 
+
+    FOREIGN KEY (Property_ID) REFERENCES Dim_Property(Property_ID) 
+
+); 
+
+  
+
+CREATE TABLE Dim_Agent ( 
+
+    Agent_ID INT PRIMARY KEY, 
+
+    Agent_Name VARCHAR(100), 
+
+    Agent_Contact VARCHAR(50), 
+
+    Commission_Rate DECIMAL(5, 2), 
+
+    Assigned_Properties_ID INT, 
+
+    FOREIGN KEY (Assigned_Properties_ID) REFERENCES Sub_Dim_Assigned_Properties(Assigned_Properties_ID) 
+
+); 
+
+  
+
+-- Time Dimension 
+
+CREATE TABLE Dim_Time ( 
+
+    Time_ID INT PRIMARY KEY, 
+
+    Date DATE, 
+
+    Day INT, 
+
+    Month INT, 
+
+    Year INT, 
+
+    Quarter INT 
+
+); 
+
+  
+
+-- Fact Table: Rental Transactions 
+
+CREATE TABLE Fact_Rental_Transactions ( 
+
+    Transaction_ID INT PRIMARY KEY, 
+
+    Property_ID INT, 
+
+    Tenant_ID INT, 
+
+    Agent_ID INT, 
+
+    Lease_Start_Date DATE, 
+
+    Lease_End_Date DATE, 
+
+    Rent_Amount DECIMAL(10, 2), 
+
+    Security_Deposit DECIMAL(10, 2), 
+
+    Payment_Status VARCHAR(50), 
+
+    Maintenance_Cost DECIMAL(10, 2), 
+
+    Time_ID INT, 
+
+    FOREIGN KEY (Property_ID) REFERENCES Dim_Property(Property_ID), 
+
+    FOREIGN KEY (Tenant_ID) REFERENCES Dim_Tenant(Tenant_ID), 
+
+    FOREIGN KEY (Agent_ID) REFERENCES Dim_Agent(Agent_ID), 
+
+    FOREIGN KEY (Time_ID) REFERENCES Dim_Time(Time_ID) 
+
+); 
+
+  
+
+-- Insert sample data into Sub_Dim_Property_Type 
+
+INSERT INTO Sub_Dim_Property_Type (Property_Type_ID, Property_Type_Name) VALUES 
+
+(1, 'Apartment'), 
+
+(2, 'House'), 
+
+(3, 'Condo'), 
+
+(4, 'Townhouse'), 
+
+(5, 'Villa'); 
+
+  
+
+-- Insert sample data into Sub_Dim_City 
+
+INSERT INTO Sub_Dim_City (City_ID, City_Name, State, Country) VALUES 
+
+(1, 'New York', 'NY', 'USA'), 
+
+(2, 'Los Angeles', 'CA', 'USA'), 
+
+(3, 'Chicago', 'IL', 'USA'), 
+
+(4, 'Houston', 'TX', 'USA'), 
+
+(5, 'Phoenix', 'AZ', 'USA'); 
+
+  
+
+-- Insert sample data into Sub_Dim_Location 
+
+INSERT INTO Sub_Dim_Location (Location_ID, City_ID, Neighborhood, Latitude, Longitude) VALUES 
+
+(1, 1, 'Manhattan', 40.7831, -73.9712), 
+
+(2, 2, 'Beverly Hills', 34.0696, -118.4058), 
+
+(3, 3, 'Lincoln Park', 41.9254, -87.6493), 
+
+(4, 4, 'River Oaks', 29.7540, -95.4568), 
+
+(5, 5, 'Paradise Valley', 33.5312, -111.9426); 
+
+  
+
+-- Insert sample data into Dim_Property 
+
+INSERT INTO Dim_Property (Property_ID, Property_Type_ID, Location_ID, Size, Number_Of_Bedrooms, Number_Of_Bathrooms, Amenities) VALUES 
+
+(1, 1, 1, 900, 2, 2, 'Pool, Gym'), 
+
+(2, 2, 2, 2500, 4, 3, 'Garden, Garage'), 
+
+(3, 3, 3, 1200, 3, 2, 'Balcony, Gym'), 
+
+(4, 4, 4, 2000, 3, 3, 'Patio, Pool'), 
+
+(5, 5, 5, 4000, 5, 4, 'Pool, Garden, Garage'); 
+
+  
+
+-- Insert sample data into Sub_Dim_Rental_History 
+
+INSERT INTO Sub_Dim_Rental_History (Rental_History_ID, Previous_Property_ID, Previous_Lease_Start_Date, Previous_Lease_End_Date, Previous_Rent_Amount) VALUES 
+
+(1, 1, '2022-01-01', '2023-01-01', 1500.00), 
+
+(2, 2, '2022-02-01', '2023-02-01', 3000.00), 
+
+(3, 3, '2022-03-01', '2023-03-01', 2000.00), 
+
+(4, 4, '2022-04-01', '2023-04-01', 2500.00), 
+
+(5, 5, '2022-05-01', '2023-05-01', 5000.00); 
+
+  
+
+-- Insert sample data into Dim_Tenant 
+
+INSERT INTO Dim_Tenant (Tenant_ID, First_Name, Last_Name, Email, Phone_Number, Rental_History_ID) VALUES 
+
+(1, 'John', 'Doe', 'john.doe@example.com', '1234567890', 1), 
+
+(2, 'Jane', 'Smith', 'jane.smith@example.com', '0987654321', 2), 
+
+(3, 'Michael', 'Johnson', 'michael.j@example.com', '1122334455', 3), 
+
+(4, 'Emily', 'Davis', 'emily.d@example.com', '5566778899', 4), 
+
+(5, 'David', 'Wilson', 'david.w@example.com', '6677889900', 5); 
+
+  
+
+-- Insert sample data into Sub_Dim_Assigned_Properties 
+
+INSERT INTO Sub_Dim_Assigned_Properties (Assigned_Properties_ID, Property_ID) VALUES 
+
+(1, 1), 
+
+(2, 2), 
+
+(3, 3), 
+
+(4, 4), 
+
+(5, 5); 
+
+  
+
+-- Insert sample data into Dim_Agent 
+
+INSERT INTO Dim_Agent (Agent_ID, Agent_Name, Agent_Contact, Commission_Rate, Assigned_Properties_ID) VALUES 
+
+(1, 'Alice Brown', 'alice.b@example.com', 5.00, 1), 
+
+(2, 'Tom Clark', 'tom.c@example.com', 4.50, 2), 
+
+(3, 'Nancy Adams', 'nancy.a@example.com', 6.00, 3), 
+
+(4, 'Robert Miller', 'robert.m@example.com', 5.50, 4), 
+
+(5, 'Laura Moore', 'laura.m@example.com', 4.75, 5); 
+
+  
+
+-- Insert sample data into Dim_Time 
+
+INSERT INTO Dim_Time (Time_ID, Date, Day, Month, Year, Quarter) VALUES 
+
+(1, '2024-01-15', 15, 1, 2024, 1), 
+
+(2, '2024-02-20', 20, 2, 2024, 1), 
+
+(3, '2024-03-25', 25, 3, 2024, 1), 
+
+(4, '2024-04-30', 30, 4, 2024, 2), 
+
+(5, '2024-05-10', 10, 5, 2024, 2); 
+
+  
+
+-- Insert sample data into Fact_Rental_Transactions 
+
+INSERT INTO Fact_Rental_Transactions (Transaction_ID, Property_ID, Tenant_ID, Agent_ID, Lease_Start_Date, Lease_End_Date, Rent_Amount, Security_Deposit, Payment_Status, Maintenance_Cost, Time_ID) VALUES 
+
+(1, 1, 1, 1, '2024-01-01', '2025-01-01', 1500.00, 500.00, 'Paid', 100.00, 1), 
+
+(2, 2, 2, 2, '2024-02-01', '2025-02-01', 3000.00, 1000.00, 'Paid', 200.00, 2), 
+
+(3, 3, 3, 3, '2024-03-01', '2025-03-01', 2000.00, 700.00, 'Pending', 150.00, 3), 
+
+(4, 4, 4, 4, '2024-04-01', '2025-04-01', 2500.00, 800.00, 'Paid', 120.00, 4), 
+
+(5, 5, 5, 5, '2024-05-01', '2025-05-01', 5000.00, 1500.00, 'Paid', 300.00, 5); 
+
+  
+
+-- Query: Retrieve rental transactions with rent amount above $2000 and payment status 'Paid' 
+
+SELECT  
+
+    ft.Transaction_ID, 
+
+    dp.Property_ID, 
+
+    dp.Size, 
+
+    dp.Amenities, 
+
+    dt.First_Name AS Tenant_First_Name, 
+
+    dt.Last_Name AS Tenant_Last_Name, 
+
+    da.Agent_Name, 
+
+    ft.Rent_Amount, 
+
+    ft.Payment_Status 
+
+FROM  
+
+    Fact_Rental_Transactions ft 
+
+    JOIN Dim_Property dp ON ft.Property_ID = dp.Property_ID 
+
+    JOIN Dim_Tenant dt ON ft.Tenant_ID = dt.Tenant_ID 
+
+    JOIN Dim_Agent da ON ft.Agent_ID = da.Agent_ID 
+
+WHERE  
+
+    ft.Rent_Amount > 2000 AND ft.Payment_Status = 'Paid'; 
+
+ 

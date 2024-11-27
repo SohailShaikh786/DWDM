@@ -1,0 +1,249 @@
+-- Create Database
+CREATE DATABASE galaxy;
+USE galaxy;
+
+-- Patient Dimension
+CREATE TABLE Patient_Dim (
+    PatientID INT PRIMARY KEY,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    DateOfBirth DATE,
+    Gender VARCHAR(10),
+    Address VARCHAR(255),
+    PhoneNumber VARCHAR(15),
+    InsuranceProvider VARCHAR(100)
+);
+
+-- Doctor Dimension
+CREATE TABLE Doctor_Dim (
+    DoctorID INT PRIMARY KEY,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    Specialty VARCHAR(100),
+    Department VARCHAR(100),
+    PhoneNumber VARCHAR(15)
+);
+
+-- Diagnosis Dimension
+CREATE TABLE Diagnosis_Dim (
+    DiagnosisID INT PRIMARY KEY,
+    DiagnosisCode VARCHAR(20),
+    DiagnosisDescription VARCHAR(255)
+);
+
+-- Treatment Dimension
+CREATE TABLE Treatment_Dim (
+    TreatmentID INT PRIMARY KEY,
+    TreatmentName VARCHAR(100),
+    TreatmentType VARCHAR(100)
+);
+
+-- Date Dimension
+CREATE TABLE Date_Dim (
+    DateID INT PRIMARY KEY,
+    Date DATE,
+    Day INT,
+    Month INT,
+    Year INT,
+    Quarter INT,
+    WeekDay VARCHAR(10)
+);
+
+-- Location Dimension
+CREATE TABLE Location_Dim (
+    LocationID INT PRIMARY KEY,
+    Department VARCHAR(100),
+    RoomNumber VARCHAR(10),
+    Building VARCHAR(100)
+);
+
+-- New Fact Table for Doctor Consultations (For doctor visits and treatment)
+CREATE TABLE FactDoctorConsultation (
+    ConsultationID INT PRIMARY KEY,
+    PatientID INT,
+    DoctorID INT,
+    DiagnosisID INT,
+    TreatmentID INT,
+    DateID INT,
+    LocationID INT,
+    Cost DECIMAL(10, 2),
+    Duration INT,  -- Duration in minutes
+    Outcome VARCHAR(255),
+    FOREIGN KEY (PatientID) REFERENCES Patient_Dim(PatientID),
+    FOREIGN KEY (DoctorID) REFERENCES Doctor_Dim(DoctorID),
+    FOREIGN KEY (DiagnosisID) REFERENCES Diagnosis_Dim(DiagnosisID),
+    FOREIGN KEY (TreatmentID) REFERENCES Treatment_Dim(TreatmentID),
+    FOREIGN KEY (DateID) REFERENCES Date_Dim(DateID),
+    FOREIGN KEY (LocationID) REFERENCES Location_Dim(LocationID)
+);
+
+-- New Fact Table for Treatments (For treatment sessions)
+CREATE TABLE FactTreatment (
+    TreatmentID INT PRIMARY KEY,
+    PatientID INT,
+    TreatmentDate DATE,
+    TreatmentType VARCHAR(100),  -- This column stores the treatment type
+    Cost DECIMAL(10, 2),
+    Duration INT,  -- Duration in minutes
+    Outcome VARCHAR(255),
+    FOREIGN KEY (PatientID) REFERENCES Patient_Dim(PatientID),
+    FOREIGN KEY (TreatmentID) REFERENCES Treatment_Dim(TreatmentID)  -- Reference to TreatmentID in Treatment_Dim
+);
+
+
+-- New Fact Table for Hospital Admissions (For inpatient stays, if applicable)
+CREATE TABLE FactHospitalAdmission (
+    AdmissionID INT PRIMARY KEY,
+    PatientID INT,
+    DateID INT,
+    AdmissionReason VARCHAR(255),
+    Department VARCHAR(100),
+    RoomNumber VARCHAR(10),
+    LengthOfStay INT,  -- Number of days
+    Cost DECIMAL(10, 2),
+    Outcome VARCHAR(255),
+    FOREIGN KEY (PatientID) REFERENCES Patient_Dim(PatientID),
+    FOREIGN KEY (DateID) REFERENCES Date_Dim(DateID)
+);
+
+-- New Fact Table for Patient Visits (Existing Table)
+CREATE TABLE FactPatientVisit (
+    VisitID INT PRIMARY KEY,
+    PatientID INT,
+    DoctorID INT,
+    DiagnosisID INT,
+    TreatmentID INT,
+    DateID INT,
+    LocationID INT,
+    Cost DECIMAL(10, 2),
+    Duration INT,  -- Duration in minutes
+    Outcome VARCHAR(255),
+    FOREIGN KEY (PatientID) REFERENCES Patient_Dim(PatientID),
+    FOREIGN KEY (DoctorID) REFERENCES Doctor_Dim(DoctorID),
+    FOREIGN KEY (DiagnosisID) REFERENCES Diagnosis_Dim(DiagnosisID),
+    FOREIGN KEY (TreatmentID) REFERENCES Treatment_Dim(TreatmentID),
+    FOREIGN KEY (DateID) REFERENCES Date_Dim(DateID),
+    FOREIGN KEY (LocationID) REFERENCES Location_Dim(LocationID)
+);
+
+-- Inserting Sample Data for Dimensions (same as before)
+-- Patient Dimension Data
+INSERT INTO Patient_Dim (PatientID, FirstName, LastName, DateOfBirth, Gender, Address, PhoneNumber, InsuranceProvider)
+VALUES
+(1, 'John', 'Doe', '1985-05-12', 'Male', '123 Elm St', '555-1234', 'Aetna'),
+(2, 'Jane', 'Smith', '1990-09-30', 'Female', '456 Maple Ave', '555-5678', 'Blue Cross'),
+(3, 'Mike', 'Johnson', '1978-11-20', 'Male', '789 Oak Dr', '555-8765', 'United Healthcare'),
+(4, 'Sara', 'Parker', '1995-02-15', 'Female', '321 Pine Ln', '555-0987', 'Kaiser'),
+(5, 'Tom', 'Wilson', '2000-12-10', 'Male', '654 Cedar Rd', '555-5432', 'Cigna');
+
+-- Doctor Dimension Data
+INSERT INTO Doctor_Dim (DoctorID, FirstName, LastName, Specialty, Department, PhoneNumber)
+VALUES
+(1, 'Alice', 'Brown', 'Cardiology', 'Cardiology Department', '555-8765'),
+(2, 'Bob', 'Green', 'Orthopedics', 'Orthopedic Department', '555-4321'),
+(3, 'Charlie', 'White', 'Pediatrics', 'Pediatrics Department', '555-6543'),
+(4, 'David', 'Black', 'Neurology', 'Neurology Department', '555-7890'),
+(5, 'Emma', 'Stone', 'Dermatology', 'Dermatology Department', '555-3210');
+
+-- Diagnosis Dimension Data
+INSERT INTO Diagnosis_Dim (DiagnosisID, DiagnosisCode, DiagnosisDescription)
+VALUES
+(1, 'I10', 'Hypertension'),
+(2, 'M16', 'Osteoarthritis of the hip'),
+(3, 'J45', 'Asthma'),
+(4, 'E11', 'Type 2 Diabetes Mellitus'),
+(5, 'C50', 'Breast Cancer');
+
+-- Treatment Dimension Data
+INSERT INTO Treatment_Dim (TreatmentID, TreatmentName, TreatmentType)
+VALUES
+(1, 'Angioplasty', 'Surgical'),
+(2, 'Physical Therapy', 'Rehabilitative'),
+(3, 'Chemotherapy', 'Medical'),
+(4, 'Insulin Therapy', 'Medical'),
+(5, 'Cognitive Behavioral Therapy', 'Psychotherapy');
+
+-- Date Dimension Data
+INSERT INTO Date_Dim (DateID, Date, Day, Month, Year, Quarter, WeekDay)
+VALUES
+(1, '2024-09-01', 1, 9, 2024, 3, 'Sunday'),
+(2, '2024-09-02', 2, 9, 2024, 3, 'Monday'),
+(3, '2024-09-03', 3, 9, 2024, 3, 'Tuesday'),
+(4, '2024-09-04', 4, 9, 2024, 3, 'Wednesday'),
+(5, '2024-09-05', 5, 9, 2024, 3, 'Thursday');
+
+-- Location Dimension Data
+INSERT INTO Location_Dim (LocationID, Department, RoomNumber, Building)
+VALUES
+(1, 'Cardiology', '101', 'Main Building'),
+(2, 'Orthopedics', '202', 'West Wing'),
+(3, 'Pediatrics', '303', 'East Wing'),
+(4, 'Neurology', '404', 'Main Building'),
+(5, 'Dermatology', '505', 'South Building');
+
+-- Fact Table Data (Patient Visits)
+INSERT INTO FactPatientVisit (VisitID, PatientID, DoctorID, DiagnosisID, TreatmentID, DateID, LocationID, Cost, Duration, Outcome)
+VALUES
+(1, 1, 1, 1, 1, 1, 1, 1500.00, 60, 'Successful recovery'),
+(2, 2, 2, 2, 2, 2, 2, 300.00, 45, 'Improved mobility'),
+(3, 3, 3, 3, 3, 3, 3, 250.00, 30, 'Stable condition'),
+(4, 4, 4, 4, 4, 4, 4, 500.00, 90, 'Condition under control'),
+(5, 5, 5, 5, 5, 5, 5, 1000.00, 120, 'Ongoing treatment');
+
+-- Sample Data
+-- Fact Table for Doctor Consultations
+INSERT INTO FactDoctorConsultation (ConsultationID, PatientID, DoctorID, DiagnosisID, TreatmentID, DateID, LocationID, Cost, Duration, Outcome)
+VALUES
+(1, 1, 1, 1, 1, 1, 1, 1500.00, 60, 'Successful recovery'),
+(2, 2, 2, 2, 2, 2, 2, 300.00, 45, 'Improved mobility'),
+(3, 3, 3, 3, 3, 3, 3, 250.00, 30, 'Stable condition'),
+(4, 4, 4, 4, 4, 4, 4, 500.00, 90, 'Condition under control'),
+(5, 5, 5, 5, 5, 5, 5, 1000.00, 120, 'Ongoing treatment');
+
+-- Fact Table for Treatments (Rehabilitation, Surgery, etc.)
+INSERT INTO FactTreatment (TreatmentID, PatientID, TreatmentDate, TreatmentType, Cost, Duration, Outcome)
+VALUES
+(1, 1, '2024-09-01', 'Surgical', 1500.00, 60, 'Successful recovery'),
+(2, 2, '2024-09-02', 'Rehabilitative', 300.00, 45, 'Improved mobility'),
+(3, 3, '2024-09-03', 'Medical', 250.00, 30, 'Stable condition'),
+(4, 4, '2024-09-04', 'Medical', 500.00, 90, 'Condition under control'),
+(5, 5, '2024-09-05', 'Psychotherapy', 1000.00, 120, 'Ongoing treatment');
+
+-- Fact Table for Hospital Admissions (Example of inpatient stays)
+INSERT INTO FactHospitalAdmission (AdmissionID, PatientID, DateID, AdmissionReason, Department, RoomNumber, LengthOfStay, Cost, Outcome)
+VALUES
+(1, 1, 1, 'Heart Attack', 'Cardiology', '101', 5, 7500.00, 'Successful recovery'),
+(2, 2, 2, 'Hip Replacement Surgery', 'Orthopedics', '202', 7, 10500.00, 'Improved mobility'),
+(3, 3, 3, 'Asthma Attack', 'Pediatrics', '303', 3, 2000.00, 'Stable condition'),
+(4, 4, 4, 'Stroke', 'Neurology', '404', 10, 15000.00, 'Condition under control'),
+(5, 5, 5, 'Skin Cancer Surgery', 'Dermatology', '505', 4, 8000.00, 'Ongoing treatment');
+
+-- Average Duration of Treatments by Treatment Type
+SELECT 
+    t.TreatmentType, 
+    AVG(ft.Duration) AS Avg_Treatment_Duration
+FROM 
+    FactTreatment ft
+JOIN 
+    Treatment_Dim t ON ft.TreatmentID = t.TreatmentID
+GROUP BY 
+    t.TreatmentType
+ORDER BY 
+    Avg_Treatment_Duration DESC;
+    
+    
+    
+  -- Total Number of Visits per Doctor
+    SELECT 
+    d.FirstName AS Doctor_FirstName, 
+    d.LastName AS Doctor_LastName,
+    COUNT(fv.VisitID) AS Total_Visits
+FROM 
+    FactPatientVisit fv
+JOIN 
+    Doctor_Dim d ON fv.DoctorID = d.DoctorID
+GROUP BY 
+    d.DoctorID
+ORDER BY 
+    Total_Visits DESC;
+
