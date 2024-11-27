@@ -1,0 +1,55 @@
+# Step 1: Import Required Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from scipy.cluster.hierarchy import dendrogram, linkage
+from sklearn.cluster import AgglomerativeClustering
+
+# Step 2: Load the Dataset
+# Make sure to change the path to where your CSV file is located
+data = pd.read_csv(r"C:\\Users\DELL\\OneDrive\\Documents\\Mall_Customers.csv")
+
+# Display the first few rows
+print(data.head())
+print("\n")
+
+# Step 3: Preprocess the Data
+# Select relevant features (excluding CustomerID and Genre)
+features = data[['Annual Income (k$)', 'Spending Score (1-100)']]
+
+# Standardize the features
+scaler = StandardScaler()
+scaled_features = scaler.fit_transform(features)
+
+# Step 4: Perform Hierarchical Clustering
+# Compute the linkage matrix
+linkage_matrix = linkage(scaled_features, method='ward')
+
+# Create a dendrogram
+plt.figure(figsize=(10, 7))
+dendrogram(linkage_matrix, leaf_rotation=90)
+plt.title('Hierarchical Clustering Dendrogram')
+plt.xlabel('Index')
+plt.ylabel('Distance')
+plt.show()
+
+# Step 5: Fit the Hierarchical Clustering Model
+n_clusters = 5  # Specify the number of clusters
+hc = AgglomerativeClustering(n_clusters=n_clusters, linkage='ward')  # Remove affinity
+data['Cluster'] = hc.fit_predict(scaled_features)
+
+# Display the first few rows with cluster assignments
+print(data.head())
+
+# Step 6: Visualize the Clusters
+plt.figure(figsize=(10, 7))
+sns.scatterplot(x='Annual Income (k$)', y='Spending Score (1-100)', hue='Cluster', data=data, palette='Set1', s=100)
+plt.title('Customer Segmentation using Hierarchical Clustering')
+plt.xlabel('Annual Income (k$)')
+plt.ylabel('Spending Score (1-100)')
+plt.legend()
+plt.show()
+
+

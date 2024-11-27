@@ -1,0 +1,74 @@
+import pandas as pd
+from apyori import apriori
+import matplotlib.pyplot as plt
+
+# Load the data
+df = pd.read_csv(r"Daily_Weather_Dataset.csv")
+
+# Display a few rows for understanding
+df.head(3)
+
+# Prepare records for the Apriori algorithm
+records = []
+for i in range(0, len(df)):
+    records.append([str(df.values[i, j]) for j in [1, 2, 3, 4, 5, 12]])  
+
+# Apply Apriori algorithm
+association_rules = apriori(records, min_support=0.3, min_confidence=0.7, min_lift=1.2, min_length=2)
+association_results = list(association_rules)
+
+# Print the number of rules found
+print(f"Number of association rules found: {len(association_results)}")
+
+# Initialize lists to store rule metrics
+support = []
+confidence = []
+lift = []
+rules = []
+
+# Extract rules and their metrics
+print("Association Rules:")
+for item in association_results:
+    pair = item[0]
+    items = [x for x in pair]
+    support.append(item[1])
+    confidence.append(item[2][0][2])
+    lift.append(item[2][0][3])
+    rules.append(f"{items[0]} -> {items[1]}")
+    
+    print(f"Rule: {items[0]} -> {items[1]}")
+    print(f"Support: {item[1]}")
+    print(f"Confidence: {item[2][0][2]}")
+    print(f"Lift: {item[2][0][3]}")
+    print("=====================================")
+
+# Visualization: Bar Charts for Support, Confidence, and Lift
+def plot_support_confidence_lift(support, confidence, lift):
+    plt.figure(figsize=(12, 6))
+    
+    # Bar chart for support
+    plt.subplot(1, 3, 1)
+    plt.bar(range(len(support)), support, color='blue', alpha=0.7)
+    plt.title('Support')
+    plt.xlabel('Rule Index')
+    plt.ylabel('Support')
+    
+    # Bar chart for confidence
+    plt.subplot(1, 3, 2)
+    plt.bar(range(len(confidence)), confidence, color='green', alpha=0.7)
+    plt.title('Confidence')
+    plt.xlabel('Rule Index')
+    plt.ylabel('Confidence')
+    
+    # Bar chart for lift
+    plt.subplot(1, 3, 3)
+    plt.bar(range(len(lift)), lift, color='red', alpha=0.7)
+    plt.title('Lift')
+    plt.xlabel('Rule Index')
+    plt.ylabel('Lift')
+    
+    plt.tight_layout()
+    plt.show()
+
+# Call the visualization function
+plot_support_confidence_lift(support, confidence, lift)

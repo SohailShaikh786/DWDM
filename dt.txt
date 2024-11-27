@@ -1,0 +1,79 @@
+import pandas as pd
+from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import classification_report
+
+# Load the dataset
+data = pd.read_csv(r"C:\\Users\\DELL\\OneDrive\\Documents\\Daily_Weather_Dataset.csv")
+
+# Remove the 'number' column, as it's not a feature
+data.drop(['number'], axis=1, inplace=True)
+
+# Drop rows with missing values
+data = data.dropna()
+
+# Print the first 5 rows of the cleaned data
+print("Sample of the cleaned data :")
+print(data.head())
+
+# Create a target label: Binarizing the relative_humidity_3pm to 0 or 1
+data['high_humidity_label'] = (data['relative_humidity_3pm'] > 24.99).astype(int)
+
+# Select features for the model
+morning_features = [
+    'air_pressure_9am', 'air_temp_9am', 'avg_wind_direction_9am',
+    'avg_wind_speed_9am', 'max_wind_direction_9am', 'max_wind_speed_9am',
+    'rain_accumulation_9am', 'rain_duration_9am'
+]
+
+# Create feature matrix (X) and target vector (y)
+X = data[morning_features]
+y = data['high_humidity_label']
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=324)
+
+# Train the Decision Tree model
+humidity_classifier = DecisionTreeClassifier(max_leaf_nodes=10, random_state=0)
+humidity_classifier.fit(X_train, y_train)
+
+# Predict on the test set
+predictions = humidity_classifier.predict(X_test)
+
+# Calculate and print the accuracy as a percentage
+accuracy = accuracy_score(y_test, predictions)
+accuracy_percentage = accuracy * 100
+print(f"\nAccuracy : {accuracy_percentage:.2f}%")
+
+# Plotting the decision tree
+plt.figure(figsize=(30, 20), dpi=50)
+plot_tree(humidity_classifier, 
+          feature_names=morning_features, 
+          class_names=['Low', 'High'], 
+          filled=True, 
+          fontsize=14, 
+          rounded=True, 
+          proportion=True)  
+plt.title('Decision Tree for Humidity Prediction',fontsize=20)
+plt.show()
+
+# Compute confusion matrix
+conf_matrix = confusion_matrix(y_test, predictions)
+
+print("\nConfusion Matrix :\n", conf_matrix)
+
+# Plot confusion matrix
+plt.figure(figsize=(6,4))
+sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues", xticklabels=['Low Humidity', 'High Humidity'], yticklabels=['Low Humidity', 'High Humidity'])
+plt.ylabel('Actual')
+plt.xlabel('Predicted')
+plt.title('Confusion Matrix')
+plt.show()
+
+# Print the classification report
+print("\nClassification Report :")
+print(classification_report(y_test, predictions, target_names=['Low Humidity', 'High Humidity']))
+
